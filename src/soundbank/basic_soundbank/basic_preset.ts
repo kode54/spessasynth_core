@@ -538,13 +538,10 @@ export class BasicPreset implements MIDIPatchNamed {
         writeBinaryStringIndexed(phdrData.xdta, this.name.slice(20), 20);
 
         writeWord(phdrData.pdta, this.program);
-        let wBank = this.bankMSB;
+        let wBank = (this.bankMSB & 0x7f) + ((this.bankLSB & 0x7f) << 8);
         if (this.isGMGSDrum) {
             // Drum flag
-            wBank = 0x80;
-        } else if (this.bankMSB === 0) {
-            // If bank MSB is zero, write bank LSB (XG)
-            wBank = this.bankLSB;
+            wBank += 0x80;
         }
         writeWord(phdrData.pdta, wBank);
         // Skip wBank and wProgram
