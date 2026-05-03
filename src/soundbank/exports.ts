@@ -14,3 +14,14 @@ export { BasicPreset } from "./basic_soundbank/basic_preset";
 export { BasicPresetZone } from "./basic_soundbank/basic_preset_zone";
 export { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 export { SoundBankLoader } from "./sound_bank_loader";
+
+export * from "./sflist/types";
+export * from "./sflist/errors";
+export { SFListLoader } from "./sflist/sflist";
+export { parseLegacySFList } from "./sflist/parser";
+export {
+    applyGain,
+    applyPatchMapping,
+    filterBankByRules,
+    mergeFilteredBanks
+} from "./sflist/processor";

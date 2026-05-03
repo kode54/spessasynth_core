@@ -1,17 +1,69 @@
 // Process arguments
+import {
+    BasicSoundBank,
+    type SF2VersionTag,
+    SFListLoader,
+    SoundBankLoader
+} from "../src";
 import * as fs from "fs/promises";
-import { BasicSoundBank, type SF2VersionTag, SoundBankLoader } from "../src";
+import path from "path";
+
+class SoundBankLoaderNode {
+    /**
+     * Loads a sound bank or SFList from a file path.
+     * Automatically detects the file type and handles SFList files with proper path resolution.
+     * @param filePath The path to the sound bank file (.sf2, .dls, or .sflist).
+     * @returns The loaded sound bank.
+     * @throws Error if the file cannot be read or loaded.
+     */
+    public static async fromFilePath(
+        filePath: string
+    ): Promise<BasicSoundBank> {
+        // Read the file
+        const fileBuffer = await fs.readFile(filePath);
+        const buffer = fileBuffer.buffer;
+
+        // Check if it's an SFList file by examining the file extension and content
+        const ext = path.extname(filePath).toLowerCase();
+        const textPreview = new TextDecoder().decode(
+            buffer.slice(0, Math.min(100, buffer.byteLength))
+        );
+        const trimmed = textPreview.trim();
+
+        if (
+            ext === ".sflist" ||
+            trimmed.startsWith("{") ||
+            trimmed.includes("|")
+        ) {
+            // It's an SFList file
+            const basePath = path.dirname(filePath);
+            return SFListLoader.loadAsync(
+                buffer,
+                basePath,
+                async (loadPath: string) => {
+                    // Load referenced SoundFont files
+                    const refFileBuffer = await fs.readFile(loadPath);
+                    return SoundBankLoader.fromArrayBuffer(
+                        refFileBuffer.buffer
+                    );
+                }
+            );
+        }
+
+        // It's a regular sound bank file
+        return SoundBankLoader.fromArrayBuffer(buffer);
+    }
+}
 
 const args = process.argv.slice(2);
 if (args.length !== 1) {
-    console.info("Usage: tsx index.ts <sf2/dls input path>");
+    console.info("Usage: tsx index.ts <sf2/dls/sflist input path>");
     process.exit();
 }
 
 const filePath = args[0];
-const file = await fs.readFile(filePath);
 await BasicSoundBank.isSF3DecoderReady;
-const bank = SoundBankLoader.fromArrayBuffer(file.buffer);
+const bank = await SoundBankLoaderNode.fromFilePath(filePath);
 console.info("Loaded bank:", bank.soundBankInfo.name);
 
 console.group("Bank information");
